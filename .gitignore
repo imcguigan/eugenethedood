@@ -4,3 +4,5 @@ venv/
 *.pyo
 *.egg-info/
 .DS_Store
+.env
+eugenedood.db
