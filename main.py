@@ -6,6 +6,15 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
+import boto3
+
+
+s3 = boto3.client(
+    "s3",
+    aws_access_key_id=os.environ.get("AWS_ACCESS_KEY_ID"),
+    aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY"),
+    region_name="us-east-2",  # Adjust this if you're using a different AWS region for your S3 bucket
+)
 
 load_dotenv()
 
@@ -83,6 +92,41 @@ def logout():
     session.pop("username", None)
     flash("Logged out successfully!", "success")
     return redirect(url_for("gallery"))
+
+
+@app.route("/upload", methods=["POST"])
+def upload_file():
+    if "file" not in request.files:
+        return "No file part"
+
+    file = request.files["file"]
+
+    if file.filename == "":
+        return "No selected file"
+
+    if file:
+        filename = file.filename
+
+        s3.upload_fileobj(
+            file,
+            os.environ.get("AWS_S3_BUCKET"),
+            filename,
+            ExtraArgs={"ContentType": file.content_type},
+        )
+        image_url = f"{S3_LOCATION}{filename}"
+
+        title = request.form.get("image_title", file.filename)
+
+        logged_in_username = session.get("username")
+        user = User.query.filter_by(username=logged_in_username).first()
+        if not user:
+            flash("User not found!", "danger")
+            return redirect(url_for("admin_dashboard"))
+
+        new_image = Image(title=title, filename=filename, user_id=user.id)
+        db.session.add(new_image)
+        db.session.commit()
+        return redirect(url_for("admin_dashboard"))
 
 
 # DB model for image upload
