@@ -24,9 +24,10 @@ S3_LOCATION = "https://eugenethedood.s3.us-east-2.amazonaws.com/"
 
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + os.path.join(
-    BASE_DIR, "eugenedood.db"
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
+    "DATABASE_URL", "sqlite:///eugenedood.db"
 )
+
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy(app)
