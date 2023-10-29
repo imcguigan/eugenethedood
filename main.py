@@ -24,9 +24,11 @@ S3_LOCATION = "https://eugenethedood.s3.us-east-2.amazonaws.com/"
 
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
-    "DATABASE_URL", "sqlite:///eugenedood.db"
-)
+uri = os.getenv("DATABASE_URL", "sqlite:///this_should_never_be_used.db")
+if uri.startswith("postgres://"):
+    uri = uri.replace("postgres://", "postgresql://", 1)
+app.config["SQLALCHEMY_DATABASE_URI"] = uri
+
 
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
@@ -154,8 +156,3 @@ def hash_password(password):
 
 def check_password(hashed_password, password):
     return check_password_hash(hashed_password, password)
-
-
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
-    "DATABASE_URL", "sqlite:///eugenedood.db"
-)
