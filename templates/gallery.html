@@ -11,8 +11,37 @@
 
 <body>
     <h1>AAWelcome to Eugene the Dood's Gallery!</h1>
-    <p>Images will be displayed here soon.</p>
+    <h2>{{ latest_image.title }}</h2>
+    <p>Uploaded on: {{ latest_image.uploaded_at.strftime('%B-%d- %Y').replace("-", " ", 1).replace("-", ",") }}</p>
+    
+    <!-- Gallery Image Modal -->
+<div id="galleryModal" class="modal">
+    <span class="close">&times;</span>
+    <img class="modal-content" id="modalImage">
+    <div id="caption"></div>
+  </div>
+  
+  <!-- Display the Latest Image -->
+  <div class="container mt-4">
+      <img src="{{ S3_LOCATION }}{{ latest_image.filename }}" alt="{{ latest_image.title }}" class="img-fluid">
+  </div>
+
+  
+  <!-- Thumbnail Grid for the next 5 images -->
+<div class="thumbnail-grid">
+    {% for image in all_images %}
+        <div class="thumbnail-container">
+            <img src="{{ S3_LOCATION }}{{ image.filename }}" alt="{{ image.title }}" class="thumbnail" onclick="openModal(this)">
+            <p>{{ image.title }}</p>
+            <small>Uploaded on: {{ image.uploaded_at.strftime('%B-%d- %Y').replace("-", " ", 1).replace("-", ",") }}</small>
+        </div>
+    {% endfor %}
+</div>
+
+
+
     <a href="{{ url_for('admin_login') }}">Admin Login</a>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
 
 </body>
 </html>

@@ -11,6 +11,7 @@ load_dotenv()
 
 app = Flask(__name__)  # runs the app
 app.debug = True
+S3_LOCATION = "https://eugenethedood.s3.us-east-2.amazonaws.com/"
 
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -42,7 +43,14 @@ def login_required(f):
 
 @app.route("/")
 def gallery():
-    return render_template("gallery.html")
+    latest_image = Image.query.order_by(Image.uploaded_at.desc()).first()
+    all_images = Image.query.order_by(Image.uploaded_at.desc()).all()[1:6]
+    return render_template(
+        "gallery.html",
+        latest_image=latest_image,
+        all_images=all_images,
+        S3_LOCATION=S3_LOCATION,
+    )
 
 
 @app.route("/admin-login", methods=["GET", "POST"])
