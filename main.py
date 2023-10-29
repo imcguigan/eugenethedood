@@ -8,10 +8,6 @@ from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 import boto3
 
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
-    "DATABASE_URL", "sqlite:///eugenedood.db"
-)
-
 
 s3 = boto3.client(
     "s3",
@@ -157,3 +153,8 @@ def hash_password(password):
 
 def check_password(hashed_password, password):
     return check_password_hash(hashed_password, password)
+
+
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
+    "DATABASE_URL", "sqlite:///eugenedood.db"
+)
