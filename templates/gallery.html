@@ -12,6 +12,13 @@
 <body>
     <h1>AAWelcome to Eugene the Dood's Gallery!</h1>
     <p>Images will be displayed here soon.</p>
+    <h2>Gallery</h2>
+<div>
+    {% for image_url in image_urls %}
+        <img src="{{ image_url }}" alt="Uploaded Image" width="200">
+    {% endfor %}
+</div>
+
     <a href="{{ url_for('admin_login') }}">Admin Login</a>
 
 </body>

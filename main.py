@@ -11,6 +11,7 @@ load_dotenv()
 
 app = Flask(__name__)  # runs the app
 app.debug = True
+S3_LOCATION = "https://eugenethedood.s3.us-east-2.amazonaws.com/"
 
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -26,6 +27,7 @@ migrate = Migrate(app, db)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY")
 admin_username = os.environ.get("ADMIN_USERNAME")
 admin_password = os.environ.get("ADMIN_PASSWORD")
+S3_BUCKET = os.environ.get("AWS_S3_BUCKET")
 
 
 # Check to see if user is logged into admin site. If not redirects them to gallery
@@ -42,7 +44,9 @@ def login_required(f):
 
 @app.route("/")
 def gallery():
-    return render_template("gallery.html")
+    # Fetch image URLs from the database or S3
+    image_urls = get_image_urls_from_db_or_s3()
+    return render_template("gallery.html", image_urls=image_urls)
 
 
 @app.route("/admin-login", methods=["GET", "POST"])
@@ -77,6 +81,48 @@ def logout():
     return redirect(url_for("gallery"))
 
 
+@app.route("/upload", methods=["POST"])
+def upload_file():
+    if "file" not in request.files:
+        return "No file part"
+
+    file = request.files["file"]
+
+    title = request.form.get(
+        "image_title", file.filename
+    )  # Default to filename if no title is provided
+
+    if file.filename == "":
+        return "No selected file"
+
+    if file:
+        filename = file.filename
+
+        s3.upload_fileobj(
+            file,
+            S3_BUCKET,
+            filename,
+            ExtraArgs={"ContentType": file.content_type},
+        )
+        image_url = f"{S3_LOCATION}{filename}"
+
+        # Get the user_id of the logged-in user
+        logged_in_username = session.get("username")
+        user = User.query.filter_by(username=logged_in_username).first()
+        if not user:
+            flash("User not found!", "danger")
+            return redirect(url_for("admin_dashboard"))
+
+        new_image = Image(
+            title=title,  # use the title retreived from the form
+            filename=filename,
+            user_id=user.id,
+        )
+        db.session.add(new_image)
+        db.session.commit()
+        return redirect(url_for("admin_dashboard"))
+
+
 # DB model for image upload
 class Image(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -101,3 +147,19 @@ def hash_password(password):
 
 def check_password(hashed_password, password):
     return check_password_hash(hashed_password, password)
+
+
+# this is the S3 integration
+import boto3
+
+s3 = boto3.client(
+    "s3",
+    aws_access_key_id=os.environ.get("AWS_ACCESS_KEY_ID"),
+    aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY"),
+    region_name="us-east-2",
+)
+
+
+def get_image_urls_from_db_or_s3():
+    images = Image.query.all()
+    return [img.filename for img in images]
