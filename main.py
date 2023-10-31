@@ -8,6 +8,10 @@ from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 import boto3
 
+app = Flask(__name__)  # runs the app
+load_dotenv()
+app.debug = True
+S3_LOCATION = "https://eugenethedood.s3.us-east-2.amazonaws.com/"
 
 s3 = boto3.client(
     "s3",
@@ -16,20 +20,11 @@ s3 = boto3.client(
     region_name="us-east-2",  # Adjust this if you're using a different AWS region for your S3 bucket
 )
 
-load_dotenv()
+DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///eugenedood.db")
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-app = Flask(__name__)  # runs the app
-app.debug = True
-S3_LOCATION = "https://eugenethedood.s3.us-east-2.amazonaws.com/"
-
-
-BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-uri = os.getenv("DATABASE_URL", "sqlite:///this_should_never_be_used.db")
-if uri.startswith("postgres://"):
-    uri = uri.replace("postgres://", "postgresql://", 1)
-app.config["SQLALCHEMY_DATABASE_URI"] = uri
-
-
+app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy(app)
@@ -57,6 +52,10 @@ def login_required(f):
 def gallery():
     latest_image = Image.query.order_by(Image.uploaded_at.desc()).first()
     all_images = Image.query.order_by(Image.uploaded_at.desc()).all()[1:6]
+
+    if not latest_image:
+        return "No Images"
+
     return render_template(
         "gallery.html",
         latest_image=latest_image,
